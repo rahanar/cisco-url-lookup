@@ -57,6 +57,13 @@ func TestGetHandler(t *testing.T) {
 			wantMessage: `{"message":"URL is not malicious: ftp://myname@host.dom/%2Fetc/motd","status":"OK"}`,
 			statusCode:  http.StatusOK,
 		},
+		{
+			name:        "GET request - really long URL - success",
+			method:      http.MethodGet,
+			target:      "/urlinfo/1/http://goodwebsite.com:443/test/test/test",
+			wantMessage: `{"message":"URL is not malicious: http://goodwebsite.com:443/test/test/test","status":"OK"}`,
+			statusCode:  http.StatusOK,
+		},
 	}
 
 	for _, tc := range tt {
