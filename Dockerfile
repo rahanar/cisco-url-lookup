@@ -6,7 +6,8 @@ COPY go.* ./
 RUN go mod download
 
 # build the app
-COPY cmd/main.go /url-lookup/
+COPY main.go /url-lookup/
+COPY /url/* /url-lookup/url/
 RUN CGO_ENABLED=0 go build -o /bin/webserver
 
 FROM scratch
