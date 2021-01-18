@@ -31,6 +31,11 @@ func buildLocalDB(urls URLsJsonFile) {
 }
 
 func main() {
+	setupLocalDB()
+	log.Fatal(http.ListenAndServe(":8000", http.HandlerFunc(wrapperMuxHandler)))
+}
+
+func setupLocalDB() {
 	jsfile, err := os.Open("./url-database.json")
 	if err != nil {
 		panic(err)
@@ -45,7 +50,6 @@ func main() {
 	var urlsJSONFile URLsJsonFile
 	json.Unmarshal(byteJSFile, &urlsJSONFile)
 	buildLocalDB(urlsJSONFile)
-	log.Fatal(http.ListenAndServe(":8000", http.HandlerFunc(wrapperMuxHandler)))
 }
 
 // This wrapper intercepts the incoming requests and checks RequestURI
