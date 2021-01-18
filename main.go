@@ -56,7 +56,8 @@ func main() {
 // would eleminate them and return a redirect response.
 func wrapperMuxHandler(w http.ResponseWriter, r *http.Request) {
 
-	if !strings.HasPrefix(r.URL.RequestURI(), handlerPattern) {
+	if !strings.HasPrefix(r.URL.RequestURI(), handlerPattern) || (strings.HasPrefix(r.URL.RequestURI(),
+		handlerPattern) && r.Method != http.MethodGet) {
 		// Everything that's not /urlinfo/1/ will be ignored.
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
