@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	gourl "net/url"
+	"os"
 	"strings"
 
 	"github.com/rahanar/cisco-url-lookup/url"
@@ -14,18 +17,34 @@ var handlerPattern = "/urlinfo/1/"
 
 var localDB = make(map[string]url.URL)
 
-func buildLocalDB() {
-	urls := []string{"test.com", "badwebsite.com"}
-	for _, u := range urls {
+type URLsJsonFile struct {
+	Hostnames []url.URL `json:"hostnames"`
+}
+
+func buildLocalDB(urls URLsJsonFile) {
+	for _, u := range urls.Hostnames {
 		urlObj := url.NewURL()
-		urlObj.SetHostname(u)
-		urlObj.SetMalicious(true)
+		urlObj.SetHostname(u.Hostname)
+		urlObj.SetMalicious(u.Malicious)
 		localDB[urlObj.Hostname] = *urlObj
 	}
 }
 
 func main() {
-	buildLocalDB()
+	jsfile, err := os.Open("./url-database.json")
+	if err != nil {
+		panic(err)
+	}
+	defer jsfile.Close()
+
+	byteJSFile, err := ioutil.ReadAll(jsfile)
+	if err != nil {
+		panic(err)
+	}
+
+	var urlsJSONFile URLsJsonFile
+	json.Unmarshal(byteJSFile, &urlsJSONFile)
+	buildLocalDB(urlsJSONFile)
 	log.Fatal(http.ListenAndServe(":8000", http.HandlerFunc(wrapperMuxHandler)))
 }
 
