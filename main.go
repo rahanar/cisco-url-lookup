@@ -10,6 +10,8 @@ import (
 	"github.com/rahanar/cisco-url-lookup/url"
 )
 
+var handlerPattern = "/urlinfo/1/"
+
 var localDB = make(map[string]url.URL)
 
 func buildLocalDB() {
@@ -35,9 +37,11 @@ func main() {
 // would eleminate them and return a redirect response.
 func wrapperMuxHandler(w http.ResponseWriter, r *http.Request) {
 
-	if !strings.HasPrefix(r.URL.RequestURI(), "/urlinfo/1/") {
-		// TODO: figure out a bette way to handle this
-		http.DefaultServeMux.ServeHTTP(w, r)
+	if !strings.HasPrefix(r.URL.RequestURI(), handlerPattern) {
+		// Everything that's not /urlinfo/1/ will be ignored.
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"message": "Resource not found","status": "NotFound"}`))
 		return
 	}
 
@@ -45,27 +49,33 @@ func wrapperMuxHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func isURLMaliciousHandler(w http.ResponseWriter, r *http.Request) {
-	hostname, err := extractHostname(r.URL)
+	requestURL := r.URL.RequestURI()[len(handlerPattern):]
+	hostname, err := extractHostname(requestURL)
 	if err != nil {
-		log.Printf("error parsing request URI: %s", r.URL.RequestURI())
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("error parsing request URI: %s", requestURL)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	var msg string
+	var msgByte []byte
 	isMalicious := isURLMalicious(hostname)
+
+	// Have to set Content-Type before WriteHeader
+	w.Header().Set("Content-Type", "application/json")
 	if isMalicious {
-		msg = fmt.Sprintf("The following url is malicious %s", hostname)
+		w.WriteHeader(http.StatusForbidden)
+		msg := fmt.Sprintf(`{"message":"URL is malicious: %s","status":"Forbidden"}`, requestURL)
+		msgByte = []byte(msg)
 	} else {
-		msg = fmt.Sprintf("The following url is not malicious %s", hostname)
+		w.WriteHeader(http.StatusOK)
+		msg := fmt.Sprintf(`{"message":"URL is not malicious: %s","status":"OK"}`, requestURL)
+		msgByte = []byte(msg)
 	}
-	fmt.Fprintln(w, msg)
+	w.Write(msgByte)
 }
 
-func extractHostname(u *gourl.URL) (string, error) {
+func extractHostname(incomingURL string) (string, error) {
 	var extractedURI *gourl.URL
-	inputURL := u.RequestURI()[len("/urlinfo/1/"):]
-	extractedURI, err := gourl.Parse(inputURL)
+	extractedURI, err := gourl.Parse(incomingURL)
 	if err != nil {
 		return "", err
 	}
@@ -73,7 +83,7 @@ func extractHostname(u *gourl.URL) (string, error) {
 	// if the Host field is empty, it means the passed in URL doesn't have scheme set
 	// adding https:// as a scheme to get a complete URL structure
 	if extractedURI.Hostname() == "" {
-		extractedURI, err = gourl.ParseRequestURI("https://" + inputURL)
+		extractedURI, err = gourl.ParseRequestURI("https://" + incomingURL)
 		if err != nil {
 			return "", err
 		}
