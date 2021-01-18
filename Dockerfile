@@ -7,10 +7,12 @@ RUN go mod download
 
 # build the app
 COPY main.go /url-lookup/
+COPY url-database.json /url-lookup/url-database.json
 COPY /url/* /url-lookup/url/
-RUN CGO_ENABLED=0 go build -o /bin/webserver
+RUN CGO_ENABLED=0 go build 
 
-FROM scratch
-COPY --from=builder /bin/webserver /bin/webserver
+FROM alpine
+WORKDIR /url-lookup/
+COPY --from=builder /url-lookup .
 EXPOSE 8000
-ENTRYPOINT ["/bin/webserver"]
+ENTRYPOINT ["./cisco-url-lookup"]

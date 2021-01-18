@@ -1,8 +1,8 @@
 package url
 
 type URL struct {
-	Hostname  string
-	Malicious bool
+	Hostname  string `json:"hostname"`
+	Malicious bool   `json:"malicious"`
 }
 
 func NewURL() *URL {
