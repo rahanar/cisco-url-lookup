@@ -1,6 +1,27 @@
 # cisco-url-lookup
 A URL lookup service that responds whether a URL contains a malware or not
 
+This is a simple golang HTTP server that only responds to GET requests on `/urlinfo/1/{hostname_and_port}/{original_path_and_query_string}` resource. Currently the service uses in-memory URL database to verify whether the URL, that's a part of the GET request resource path, is malicious or not. The in-memory database is populated from a local `url-database.json` file. The service use the hostname of the incoming URL to look it up in the database. The current implementation only checks whether the URL is in the database. If it is, then it would also check whether `malicious` field is set to `True` or `False`. If the URL is marked as malicious, the service would return `StatusForbidden` with HTTP code 403. If the URL is not in the database or if it is not marked as malicious, the service would return `StatusOK` with HTTP code 200.
+
+The service can be further enhanced to do a more thorough and granular heuristic to verify whether a URL is malicious or not. For example, it can be enhanced to verify the port of the incoming URL as well as the original path.
+
+### Requirements
+To run this application locally, you would either need:
+
+1. golang version - 1.15.6
+2. docker version - 19.03.12
+
+### Instructions
+
+To run this application locally, you can simply run the following commands:
+
+`make docker-build`
+`make docker-run`
+
+The first command will create a local docker image with a `url-lookup:latest` tag for the service. The second command will create a new container based on the image created in the previous command. The container will be exposed on port `8000`.
+
+If you want to run the app without running it inside the container, you can simply run `make run`. This command will start-up the app and will listen on port `8000`.
+
 
 # Thought exercise responses
 
